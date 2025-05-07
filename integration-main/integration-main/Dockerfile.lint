@@ -1,0 +1,21 @@
+# Use the official Python image from the Docker Hub
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install development dependencies
+COPY requirements-dev.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt
+
+# Copy the pylintrc file first
+COPY pylintrc /app/pylintrc
+COPY mypy.ini /app/mypy.ini
+
+# Copy the project source code into the container
+COPY . .
+
+RUN mypy --install-types --non-interactive
+
+# Run linting and type checking on the current directory
+CMD ["sh", "-c", "black . && pylint src/ --rcfile=pylintrc --ignore=migrations && mypy --config-file=mypy.ini src"]

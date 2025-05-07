@@ -1,0 +1,36 @@
+[MASTER]
+ignore=migrations
+ignore-patterns=.*\.py
+ignore-paths=^migrations/.*$,^alembic/.*$,^env\.py$
+
+[MESSAGES CONTROL]
+disable=
+    C0103,  # invalid-name (mostly for migration files and test fixtures)
+    R0903,  # too-few-public-methods (SQLAlchemy models often have few methods)
+    W0212,  # protected-access (tests often need to access protected members)
+    W0613,  # unused-argument (common in test fixtures with dependency injection)
+    W0621,  # redefined-outer-name (common in pytest fixtures)
+    E1101,  # no-member (alembic imports)
+    R0801,  # duplicate-code (common in migrations)
+    C1803,  # use-implicit-booleaness-not-comparison
+    C0114,  # missing-module-docstring (consider enabling this later)
+    C0115,  # missing-class-docstring (consider enabling this later)
+    C0116,  # missing-function-docstring (consider enabling this later)
+    W0718,  # broad-exception-caught
+    C0301,  # line-too-long (handled by black)
+    C0411,  # wrong-import-order (in tests)
+    W0611,  # unused-import (in tests)
+    R0913,  # too-many-arguments
+    W0719,  # broad-exception-raised
+    C0413,  # wrong-import-position (in tests)
+    C0415,  # import-outside-toplevel (in tests)
+    R0914,  # too-many-locals
+    R0912,  # too-many-branches
+    R0915,  # too-many-statements
+    R0902,  # too-many-instance-attributes
+    R0904,  # too-many-public-methods
+    R0911,  # too-many-return-statements
+    W0703,  # broad-except
+
+[FORMAT]
+max-line-length=100

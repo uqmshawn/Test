@@ -1,0 +1,16 @@
+# Use the official Python image from the Docker Hub
+FROM python:3.9-slim
+
+# Set working directory
+WORKDIR /app
+
+# Install development dependencies
+COPY requirements-dev.txt .
+COPY requirements-combined.txt .
+RUN pip install --no-cache-dir -r requirements-dev.txt -r requirements-combined.txt
+
+# Copy the project source code into the container
+COPY . .
+
+# Run tests
+CMD ["sh", "-c", "PYTHONPATH=src pytest tests/ -v --timeout=30"]

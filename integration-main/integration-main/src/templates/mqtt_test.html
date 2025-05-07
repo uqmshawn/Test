@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>MQTT Test Message</h2>
+    
+    <form method="POST">
+        <div class="mb-3">
+            <label for="topic" class="form-label">Topic</label>
+            <input type="text" class="form-control" id="topic" name="topic" placeholder="Enter MQTT topic" required>
+        </div>
+        
+        <div class="mb-3">
+            <label for="payload" class="form-label">Payload</label>
+            <textarea class="form-control" id="payload" name="payload" rows="5" placeholder="Enter message payload (JSON)" required></textarea>
+        </div>
+        
+        <button type="submit" class="btn btn-primary">Publish Message</button>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'message' else 'info' }} mt-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}

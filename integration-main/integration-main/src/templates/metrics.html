@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Power System Metrics{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>Power System Metrics</h2>
+  <div class="row">
+    <!-- BMS Section -->
+    <div class="col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header bg-primary text-white">
+          Battery Management System
+        </div>
+        <div class="card-body">
+          {% if latest_bms %}
+            <dl class="row">
+              <dt class="col-5">Voltage</dt><dd class="col-7">{{ latest_bms.data.volts }} V</dd>
+              <dt class="col-5">Current</dt><dd class="col-7">{{ latest_bms.data.amps }} A</dd>
+              <dt class="col-5">Power</dt><dd class="col-7">{{ latest_bms.data.watts }} W</dd>
+              <dt class="col-5">Remaining Capacity</dt><dd class="col-7">{{ latest_bms.data.remainingAh }} Ah</dd>
+              <dt class="col-5">Full Capacity</dt><dd class="col-7">{{ latest_bms.data.fullAh }} Ah</dd>
+              <dt class="col-5">Charging</dt><dd class="col-7">{{ latest_bms.data.charging }}{% if latest_bms.data.charging %} ✓{% endif %}</dd>
+              <dt class="col-5">State of Charge</dt><dd class="col-7">{{ latest_bms.data.stateOfCharge }} %</dd>
+              <dt class="col-5">State of Health</dt><dd class="col-7">{{ latest_bms.data.stateOfHealth }} %</dd>
+              <dt class="col-5">Temperature</dt><dd class="col-7">{{ latest_bms.data.temp }} °C</dd>
+            </dl>
+          {% else %}
+            <p class="text-muted">No BMS data available.</p>
+          {% endif %}
+        </div>
+        <div class="card-footer text-muted small">
+          {% if latest_bms %}As of {{ latest_bms.timestamp }}{% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- MultiPlus Section -->
+    <div class="col-md-6 mb-4">
+      <div class="card h-100">
+        <div class="card-header bg-success text-white">
+          Victron MultiPlus
+        </div>
+        <div class="card-body">
+          {% if latest_mp %}
+            <dl class="row">
+              <dt class="col-5">Input Voltage</dt><dd class="col-7">{{ latest_mp.data.voltsIn }} V</dd>
+              <dt class="col-5">Input Current</dt><dd class="col-7">{{ latest_mp.data.ampsIn }} A</dd>
+              <dt class="col-5">Input Power</dt><dd class="col-7">{{ latest_mp.data.wattsIn }} W</dd>
+              <dt class="col-5">Input Frequency</dt><dd class="col-7">{{ latest_mp.data.freqIn }} Hz</dd>
+              <dt class="col-5">Output Voltage</dt><dd class="col-7">{{ latest_mp.data.voltsOut }} V</dd>
+              <dt class="col-5">Output Current</dt><dd class="col-7">{{ latest_mp.data.ampsOut }} A</dd>
+              <dt class="col-5">Output Power</dt><dd class="col-7">{{ latest_mp.data.wattsOut }} W</dd>
+              <dt class="col-5">Output Frequency</dt><dd class="col-7">{{ latest_mp.data.freqOut }} Hz</dd>
+            </dl>
+          {% else %}
+            <p class="text-muted">No MultiPlus data available.</p>
+          {% endif %}
+        </div>
+        <div class="card-footer text-muted small">
+          {% if latest_mp %}As of {{ latest_mp.timestamp }}{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

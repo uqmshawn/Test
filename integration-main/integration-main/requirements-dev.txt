@@ -1,0 +1,9 @@
+pylint
+mypy
+types-toml
+types-requests
+types-Flask
+black
+types-psycopg2
+pytest
+pytest-timeout

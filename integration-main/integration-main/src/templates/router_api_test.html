@@ -1,0 +1,262 @@
+{% extends "base.html" %}
+
+{% block title %}Router API Test{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Router API Test</h1>
+    <p class="text-muted">
+        Test router API endpoints with automatic authentication
+    </p>
+    
+    <!-- GPIO Configuration Documentation -->
+    <div class="card mb-4">
+        <div class="card-header bg-secondary text-white" data-bs-toggle="collapse" href="#gpioConfigDocs" role="button" aria-expanded="false" aria-controls="gpioConfigDocs">
+            <i class="bi bi-info-circle-fill me-2"></i>GPIO Configuration Documentation
+            <i class="bi bi-chevron-down float-end"></i>
+        </div>
+        <div class="collapse" id="gpioConfigDocs">
+            <div class="card-body">
+                <h5>1. Configure GPIO Pins</h5>
+                <p>
+                    The router's GPIO pins can be configured using the API. This example shows how to
+                    set up two digital input pins for monitoring.
+                </p>
+                
+                <h5>Configuration Endpoint</h5>
+                <p><code>POST api/config.gpio</code></p>
+                
+                <h5>Example Request</h5>
+                <pre class="bg-light p-3 rounded"><code>{
+  "list": [
+    {
+      "id": 1,
+      "enable": true,
+      "type": "digital_input",
+      "mode": "input_sensing",
+      "delay": 2,
+      "customStates": {"high": "ON", "low": "OFF"},
+      "name": "IGN"
+    },
+    {
+      "id": 2,
+      "enable": true,
+      "type": "digital_input",
+      "mode": "input_sensing",
+      "delay": 2,
+      "customStates": {},
+      "name": "I/O"
+    }
+  ]
+}</code></pre>
+
+                <h5>Configuration Options</h5>
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Description</th>
+                            <th>Options</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>id</td>
+                            <td>GPIO pin identifier</td>
+                            <td>Integer (1-based)</td>
+                        </tr>
+                        <tr>
+                            <td>enable</td>
+                            <td>Enable/disable the pin</td>
+                            <td>true/false</td>
+                        </tr>
+                        <tr>
+                            <td>type</td>
+                            <td>Pin type</td>
+                            <td>"digital_input", "digital_output"</td>
+                        </tr>
+                        <tr>
+                            <td>mode</td>
+                            <td>Operating mode</td>
+                            <td>"input_sensing", "output_control"</td>
+                        </tr>
+                        <tr>
+                            <td>delay</td>
+                            <td>Debounce delay in seconds</td>
+                            <td>Integer</td>
+                        </tr>
+                        <tr>
+                            <td>customStates</td>
+                            <td>Custom labels for high/low states</td>
+                            <td>Object with "high" and "low" properties</td>
+                        </tr>
+                        <tr>
+                            <td>name</td>
+                            <td>Friendly name for the pin</td>
+                            <td>String</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <button id="fillGpioConfigExample" class="btn btn-primary">Fill Config Example</button>
+
+                <hr class="my-4">
+
+                <h5>2. Read GPIO Input Status</h5>
+                <p>
+                    Get the current status of configured GPIO inputs. This endpoint returns the state and configuration
+                    of each enabled input pin.
+                </p>
+
+                <h5>Status Endpoint</h5>
+                <p><code>GET api/status.gpio.input?list</code></p>
+
+                <h5>Example Response</h5>
+                <pre class="bg-light p-3 rounded"><code>{
+  "response": {
+    "1": {
+      "enable": true,
+      "name": "IGN I/P",
+      "state": 1,
+      "type": "digital_input"
+    },
+    "2": {
+      "enable": true,
+      "name": "I/O",
+      "state": 0,
+      "type": "digital_input"
+    },
+    "order": [2, 1]
+  },
+  "stat": "ok"
+}</code></pre>
+
+                <h5>Response Fields</h5>
+                <table class="table table-striped mt-3">
+                    <thead>
+                        <tr>
+                            <th>Field</th>
+                            <th>Description</th>
+                            <th>Values</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>enable</td>
+                            <td>Whether the pin is enabled</td>
+                            <td>true/false</td>
+                        </tr>
+                        <tr>
+                            <td>name</td>
+                            <td>Configured pin name</td>
+                            <td>String</td>
+                        </tr>
+                        <tr>
+                            <td>state</td>
+                            <td>Current input state</td>
+                            <td>0 (low) or 1 (high)</td>
+                        </tr>
+                        <tr>
+                            <td>type</td>
+                            <td>Pin type</td>
+                            <td>"digital_input"</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <button id="fillGpioStatusExample" class="btn btn-primary">Fill Status Example</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            Request
+        </div>
+        <div class="card-body">
+            <form method="post">
+                <div class="row mb-3">
+                    <label for="endpoint" class="col-sm-2 col-form-label">Endpoint</label>
+                    <div class="col-sm-10">
+                        <div class="input-group">
+                            {% if router_ip %}
+                            <span class="input-group-text">https://{{ router_ip }}/</span>
+                            {% else %}
+                            <span class="input-group-text text-danger">Router IP not configured</span>
+                            {% endif %}
+                            <input type="text" class="form-control" id="endpoint" name="endpoint" 
+                                   placeholder="api/info.location" value="{{ request.form.get('endpoint', '') }}">
+                        </div>
+                        <small class="form-text text-muted">Example: api/info.location, api/status, etc.</small>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <label for="http_verb" class="col-sm-2 col-form-label">Method</label>
+                    <div class="col-sm-4">
+                        <select class="form-select" id="http_verb" name="http_verb">
+                            <option value="GET" {% if request.form.get('http_verb') == 'GET' or not request.form.get('http_verb') %}selected{% endif %}>GET</option>
+                            <option value="POST" {% if request.form.get('http_verb') == 'POST' %}selected{% endif %}>POST</option>
+                            <option value="PUT" {% if request.form.get('http_verb') == 'PUT' %}selected{% endif %}>PUT</option>
+                            <option value="DELETE" {% if request.form.get('http_verb') == 'DELETE' %}selected{% endif %}>DELETE</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <label for="payload" class="col-sm-2 col-form-label">Payload (JSON)</label>
+                    <div class="col-sm-10">
+                        <textarea class="form-control" id="payload" name="payload" rows="5" 
+                                  placeholder='{"key": "value"}'>{{ request.form.get('payload', '') }}</textarea>
+                        <small class="form-text text-muted">Enter JSON payload for POST/PUT requests</small>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <button type="submit" class="btn btn-primary">Send Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {% if status_code %}
+    <div class="card mb-3">
+        <div class="card-header {% if status_code >= 200 and status_code < 300 %}bg-success{% elif status_code >= 400 %}bg-danger{% else %}bg-warning{% endif %} text-white">
+            Response (Status: {{ status_code }})
+        </div>
+        <div class="card-body">
+            <pre class="bg-light p-3 rounded"><code>{{ response_data | tojson(indent=2) if response_data is mapping else response_data }}</code></pre>
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if error_message %}
+    <div class="card mb-3 bg-danger text-white">
+        <div class="card-header">
+            Error
+        </div>
+        <div class="card-body">
+            <pre class="text-white">{{ error_message }}</pre>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // GPIO Configuration Example Fill Button
+        document.getElementById('fillGpioConfigExample').addEventListener('click', function() {
+            document.getElementById('endpoint').value = 'api/config.gpio';
+            document.getElementById('http_verb').value = 'POST';
+            document.getElementById('payload').value = '{\n  "list": [\n    {\n      "id": 1,\n      "enable": true,\n      "type": "digital_input",\n      "mode": "input_sensing",\n      "delay": 2,\n      "customStates": {"high": "ON", "low": "OFF"},\n      "name": "IGN"\n    },\n    {\n      "id": 2,\n      "enable": true,\n      "type": "digital_input",\n      "mode": "input_sensing",\n      "delay": 2,\n      "customStates": {},\n      "name": "I/O"\n    }\n  ]\n}';
+        });
+
+        // GPIO Status Example Fill Button
+        document.getElementById('fillGpioStatusExample').addEventListener('click', function() {
+            document.getElementById('endpoint').value = 'api/status.gpio.input?list';
+            document.getElementById('http_verb').value = 'GET';
+            document.getElementById('payload').value = '';
+        });
+    });
+</script>
+{% endblock %}

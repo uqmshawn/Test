@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1>Message Status</h1>
+
+    <div class="status-controls">
+        <form id="status-form" method="get">
+            <label>
+                <input type="checkbox" name="show_queued" value="1" {% if show_queued %}checked{% endif %}>
+                Show Queued Messages
+            </label>
+            <label>
+                <input type="checkbox" name="show_sent" value="1" {% if show_sent %}checked{% endif %}>
+                Show Sent Messages
+            </label>
+        </form>
+    </div>
+
+    {% if show_queued %}
+    <div class="card">
+        <h2>Queued Messages</h2>
+        {% if queued_data %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Topic</th>
+                    <th>Payload</th>
+                    <th>Error</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for msg in queued_data %}
+                <tr>
+                    <td>{{ msg.timestamp }}</td>
+                    <td>{{ msg.topic }}</td>
+                    <td>{{ msg.payload }}</td>
+                    <td class="error">{{ msg.error }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No queued messages</p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if show_sent %}
+    <div class="card">
+        <h2>Recently Sent Messages</h2>
+        {% if sent_data %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Topic</th>
+                    <th>Payload</th>
+                    <th>Sent</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for msg in sent_data %}
+                <tr>
+                    <td>{{ msg.timestamp }}</td>
+                    <td>{{ msg.topic }}</td>
+                    <td>{{ msg.payload }}</td>
+                    <td>{{ msg.sent_on }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No sent messages</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('status-form');
+    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', () => {
+            form.submit();
+        });
+    });
+});
+</script>
+{% endblock %}

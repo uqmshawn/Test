@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hurtec Integration</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header>
+        <div class="logo">
+            <img src="{{ url_for('static', filename='images/hurtec-logo.png') }}" alt="Hurtec Logo">
+        </div>
+        {% if session.authenticated %}
+        <nav>
+            <a href="{{ url_for('index') }}" class="nav-link {% if request.path == '/' %}active{% endif %}">Home</a>
+            <a href="{{ url_for('status') }}" class="nav-link {% if request.path == '/status' %}active{% endif %}">Status</a>
+            <a href="{{ url_for('config') }}" class="nav-link {% if request.path == '/config' %}active{% endif %}">Config</a>
+            <a href="{{ url_for('logs') }}" class="nav-link {% if request.path == '/logs' %}active{% endif %}">Logs</a>
+            <a href="{{ url_for('mqtt_test') }}" class="nav-link {% if request.path == '/mqtt_test' %}active{% endif %}">MQTT Test</a>
+            <a href="{{ url_for('cerbo_test') }}" class="nav-link {% if request.path == '/cerbo_test' %}active{% endif %}">Cerbo Test</a>
+            <a href="{{ url_for('router_api_test') }}" class="nav-link {% if request.path == '/router_api_test' %}active{% endif %}">Router API Test</a>
+            <a href="{{ url_for('metrics') }}" class="nav-link {% if request.path == '/metrics' %}active{% endif %}">Power Metrics</a>
+            <a href="{{ url_for('logout') }}" class="nav-link nav-link-logout">Logout</a>
+        </nav>
+        {% endif %}
+    </header>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category if category != 'message' else 'info' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; {{ now.year }} Hurtec. All rights reserved.</p>
+    </footer>
+</body>
+</html>

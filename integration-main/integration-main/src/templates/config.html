@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>Configuration</h2>
+    
+    <div class="card">
+        <h3>Certificate Status</h3>
+        <div class="config-status">
+            {% for cert, exists in cert_status.items() %}
+            <div class="status-item {% if exists %}success{% else %}error{% endif %}">
+                {{ cert }}: {% if exists %}Present{% else %}Missing{% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Upload Certificate Files</h3>
+        <form method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="cert_file">Choose Certificate File</label>
+                <input type="file" id="cert_file" name="cert_file" accept=".pem,.crt,.key">
+            </div>
+            <button type="submit">Upload</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <h3>System Configuration</h3>
+        <form method="post">
+            <div class="form-group">
+                <label for="iot_environment">IoT Environment</label>
+                <select id="iot_environment" name="iot_environment">
+                    <option value="test" {% if config.iot_environment == 'test' %}selected{% endif %}>Test</option>
+                    <option value="prod" {% if config.iot_environment == 'prod' %}selected{% endif %}>Production</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="tenant_name">Tenant Name</label>
+                <input type="text" id="tenant_name" name="tenant_name" value="{{ config.tenant_name }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="device_name">Device Name</label>
+                <input type="text" id="device_name" name="device_name" value="{{ config.device_name }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="aws_iot_endpoint">AWS IoT Endpoint</label>
+                <input type="text" id="aws_iot_endpoint" name="aws_iot_endpoint" value="{{ config.aws_iot_endpoint }}">
+            </div>
+            
+            <button type="submit">Save Configuration</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
