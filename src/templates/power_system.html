@@ -1,0 +1,444 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Power System Management</h1>
+
+    <!-- Power Mode Status Section -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2>Power Mode Status</h2>
+                </div>
+                <div class="card-body">
+                    <div class="alert 
+                        {% if current_mode == 'normal' %}
+                            alert-success
+                        {% elif current_mode == 'eco' %}
+                            alert-info
+                        {% elif current_mode == 'critical' %}
+                            alert-warning
+                        {% elif current_mode == 'emergency' %}
+                            alert-danger
+                        {% else %}
+                            alert-secondary
+                        {% endif %}">
+                        <h4 class="alert-heading">{{ current_mode|default("Unknown")|title }} Mode</h4>
+                        <p>Battery Level: <strong>{{ battery_level|default("Unknown") }}%</strong></p>
+                        {% if current_mode %}
+                            <p><small>Last updated: {{ last_updated }}</small></p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Mode description -->
+                    {% if current_mode == 'normal' %}
+                        <p>All systems operating at normal power consumption.</p>
+                    {% elif current_mode == 'eco' %}
+                        <p>Non-essential systems reduced to conserve power.</p>
+                    {% elif current_mode == 'critical' %}
+                        <p>Only essential systems active to preserve battery life.</p>
+                    {% elif current_mode == 'emergency' %}
+                        <p class="text-danger"><strong>Critical systems only. Connect to power source immediately!</strong></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2>Power Mode Configuration</h2>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('power_system') }}">
+                        <input type="hidden" name="form_type" value="power_mode_config">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="normal_threshold" class="form-label">Normal Mode Threshold (%)</label>
+                                    <input type="number" class="form-control" id="normal_threshold" 
+                                           name="normal_threshold" min="0" max="100" 
+                                           value="{{ thresholds.normal }}" required>
+                                    <small class="form-text text-muted">Battery level above which Normal mode is active</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="eco_threshold" class="form-label">Eco Mode Threshold (%)</label>
+                                    <input type="number" class="form-control" id="eco_threshold" 
+                                           name="eco_threshold" min="0" max="100" 
+                                           value="{{ thresholds.eco }}" required>
+                                    <small class="form-text text-muted">Battery level above which Eco mode is active</small>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="critical_threshold" class="form-label">Critical Mode Threshold (%)</label>
+                                    <input type="number" class="form-control" id="critical_threshold" 
+                                           name="critical_threshold" min="0" max="100" 
+                                           value="{{ thresholds.critical }}" required>
+                                    <small class="form-text text-muted">Battery level above which Critical mode is active</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="hysteresis" class="form-label">Hysteresis (%)</label>
+                                    <input type="number" class="form-control" id="hysteresis" 
+                                           name="hysteresis" min="0" max="20" 
+                                           value="{{ hysteresis }}" required>
+                                    <small class="form-text text-muted">Prevents mode oscillation near thresholds</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button type="submit" class="btn btn-primary">Save Configuration</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row">
+        <!-- BMS Data Section -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>Battery Management System (BMS)</h2>
+                </div>
+                <div class="card-body">
+                    {% if latest_bms %}
+                        <table class="table table-striped">
+                            <tr>
+                                <th>Voltage:</th>
+                                <td>{{ latest_bms.volts }} V</td>
+                            </tr>
+                            <tr>
+                                <th>Current:</th>
+                                <td>{{ latest_bms.amps }} A</td>
+                            </tr>
+                            <tr>
+                                <th>Power:</th>
+                                <td>{{ latest_bms.watts }} W</td>
+                            </tr>
+                            <tr>
+                                <th>Remaining Capacity:</th>
+                                <td>{{ latest_bms.remaining_ah }} Ah</td>
+                            </tr>
+                            <tr>
+                                <th>Full Capacity:</th>
+                                <td>{{ latest_bms.full_ah }} Ah</td>
+                            </tr>
+                            <tr>
+                                <th>Charging:</th>
+                                <td>{{ "Yes" if latest_bms.charging else "No" }}</td>
+                            </tr>
+                            <tr>
+                                <th>Temperature:</th>
+                                <td>{{ latest_bms.temperature }} °C</td>
+                            </tr>
+                            <tr>
+                                <th>State of Charge:</th>
+                                <td>{{ latest_bms.state_of_charge }}%</td>
+                            </tr>
+                            <tr>
+                                <th>State of Charge (iRSOC):</th>
+                                <td>{{ latest_bms.integer_soc|default("N/A") }}%</td>
+                            </tr>
+                            <tr>
+                                <th>State of Health:</th>
+                                <td>{{ latest_bms.state_of_health }}%</td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated:</th>
+                                <td>{{ latest_bms.timestamp }}</td>
+                            </tr>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-info">No BMS data available.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- MultiPlus Data Section -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>MultiPlus Inverter/Charger</h2>
+                </div>
+                <div class="card-body">
+                    {% if latest_multiplus %}
+                        <table class="table table-striped">
+                            <tr><th colspan="2" class="text-center">AC Input</th></tr>
+                            <tr>
+                                <th>Voltage:</th>
+                                <td>{{ latest_multiplus.volts_in }} V</td>
+                            </tr>
+                            <tr>
+                                <th>Current:</th>
+                                <td>{{ latest_multiplus.amps_in }} A</td>
+                            </tr>
+                            <tr>
+                                <th>Power:</th>
+                                <td>{{ latest_multiplus.watts_in }} W</td>
+                            </tr>
+                            <tr>
+                                <th>Frequency:</th>
+                                <td>{{ latest_multiplus.freq_in }} Hz</td>
+                            </tr>
+                            <tr><th colspan="2" class="text-center">AC Output</th></tr>
+                            <tr>
+                                <th>Voltage:</th>
+                                <td>{{ latest_multiplus.volts_out }} V</td>
+                            </tr>
+                            <tr>
+                                <th>Current:</th>
+                                <td>{{ latest_multiplus.amps_out }} A</td>
+                            </tr>
+                            <tr>
+                                <th>Power:</th>
+                                <td>{{ latest_multiplus.watts_out }} W</td>
+                            </tr>
+                            <tr>
+                                <th>Frequency:</th>
+                                <td>{{ latest_multiplus.freq_out }} Hz</td>
+                            </tr>
+                            <tr>
+                                <th>Last Updated:</th>
+                                <td>{{ latest_multiplus.timestamp }}</td>
+                            </tr>
+                        </table>
+                    {% else %}
+                        <div class="alert alert-info">No MultiPlus data available.</div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- System Components Status Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h2>System Components Status</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Component</th>
+                                    <th>Normal Mode</th>
+                                    <th>Eco Mode</th>
+                                    <th>Critical Mode</th>
+                                    <th>Emergency Mode</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Communication</td>
+                                    <td class="table-success">Enabled</td>
+                                    <td class="table-success">Enabled (reduced updates)</td>
+                                    <td class="table-success">Enabled (minimal updates)</td>
+                                    <td class="table-success">Enabled (emergency only)</td>
+                                </tr>
+                                <tr>
+                                    <td>Freezer</td>
+                                    <td class="table-success">Enabled (-18°C)</td>
+                                    <td class="table-success">Enabled (-16°C)</td>
+                                    <td class="table-success">Enabled (-15°C)</td>
+                                    <td class="table-success">Enabled (-15°C)</td>
+                                </tr>
+                                <tr>
+                                    <td>Water Pump</td>
+                                    <td class="table-success">Enabled (100%)</td>
+                                    <td class="table-success">Enabled (80%)</td>
+                                    <td class="table-success">Enabled (60%)</td>
+                                    <td class="table-danger">Disabled</td>
+                                </tr>
+                                <tr>
+                                    <td>Lighting</td>
+                                    <td class="table-success">Enabled (100%)</td>
+                                    <td class="table-success">Enabled (60%)</td>
+                                    <td class="table-danger">Disabled</td>
+                                    <td class="table-danger">Disabled</td>
+                                </tr>
+                                <tr>
+                                    <td>Climate Control</td>
+                                    <td class="table-success">Enabled (22°C)</td>
+                                    <td class="table-success">Enabled (24°C, low fan)</td>
+                                    <td class="table-danger">Disabled</td>
+                                    <td class="table-danger">Disabled</td>
+                                </tr>
+                                <tr>
+                                    <td>Navigation</td>
+                                    <td class="table-success">Enabled</td>
+                                    <td class="table-success">Enabled</td>
+                                    <td class="table-success">Enabled (minimal)</td>
+                                    <td class="table-danger">Disabled</td>
+                                </tr>
+                                <tr>
+                                    <td>Entertainment</td>
+                                    <td class="table-success">Enabled</td>
+                                    <td class="table-danger">Disabled</td>
+                                    <td class="table-danger">Disabled</td>
+                                    <td class="table-danger">Disabled</td>
+                                </tr>
+                                <!-- Placeholder for additional components -->
+                                <tr class="table-light text-muted">
+                                    <td colspan="5" class="text-center">
+                                        <em>Additional components can be configured by modifying the power mode settings</em>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Data Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Send Test Data</h2>
+                </div>
+                <div class="card-body">
+                    <form method="POST">
+                        <input type="hidden" name="form_type" value="test_data">
+                        <div class="mb-3">
+                            <label for="test_data_type" class="form-label">Data Type</label>
+                            <select class="form-select" id="test_data_type" name="test_data_type">
+                                <option value="all">All Data</option>
+                                <option value="bms">BMS Only</option>
+                                <option value="multiplus">MultiPlus Only</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Send Test Data</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Historical Data Section -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Historical Data</h2>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="data_type" class="form-label">Data Type</label>
+                        <select class="form-select" id="data_type" onchange="filterHistoricalData()">
+                            <option value="all">All Data</option>
+                            <option value="bms">BMS Only</option>
+                            <option value="multiplus">MultiPlus Only</option>
+                        </select>
+                    </div>
+
+                    <div id="bms_history" class="history-section">
+                        <h3>BMS History</h3>
+                        {% if bms_history %}
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Voltage</th>
+                                        <th>Current</th>
+                                        <th>Power</th>
+                                        <th>State of Charge</th>
+                                        <th>iRSOC</th>
+                                        <th>Mode</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in bms_history %}
+                                    <tr>
+                                        <td>{{ record.timestamp }}</td>
+                                        <td>{{ record.volts }} V</td>
+                                        <td>{{ record.amps }} A</td>
+                                        <td>{{ record.watts }} W</td>
+                                        <td>{{ record.state_of_charge }}%</td>
+                                        <td>{{ record.integer_soc|default("N/A") }}%</td>
+                                        <td>
+                                            {% set level = record.integer_soc|default(record.state_of_charge|int) %}
+                                            {% if level >= thresholds.normal %}
+                                                <span class="badge bg-success">Normal</span>
+                                            {% elif level >= thresholds.eco %}
+                                                <span class="badge bg-info">Eco</span>
+                                            {% elif level >= thresholds.critical %}
+                                                <span class="badge bg-warning">Critical</span>
+                                            {% else %}
+                                                <span class="badge bg-danger">Emergency</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="alert alert-info">No historical BMS data available.</div>
+                        {% endif %}
+                    </div>
+
+                    <div id="multiplus_history" class="history-section">
+                        <h3>MultiPlus History</h3>
+                        {% if multiplus_history %}
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Input Voltage</th>
+                                        <th>Input Power</th>
+                                        <th>Output Voltage</th>
+                                        <th>Output Power</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for record in multiplus_history %}
+                                    <tr>
+                                        <td>{{ record.timestamp }}</td>
+                                        <td>{{ record.volts_in }} V</td>
+                                        <td>{{ record.watts_in }} W</td>
+                                        <td>{{ record.volts_out }} V</td>
+                                        <td>{{ record.watts_out }} W</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        {% else %}
+                            <div class="alert alert-info">No historical MultiPlus data available.</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function filterHistoricalData() {
+        const dataType = document.getElementById('data_type').value;
+        const bmsSection = document.getElementById('bms_history');
+        const multiplusSection = document.getElementById('multiplus_history');
+
+        if (dataType === 'all') {
+            bmsSection.style.display = 'block';
+            multiplusSection.style.display = 'block';
+        } else if (dataType === 'bms') {
+            bmsSection.style.display = 'block';
+            multiplusSection.style.display = 'none';
+        } else if (dataType === 'multiplus') {
+            bmsSection.style.display = 'none';
+            multiplusSection.style.display = 'block';
+        }
+    }
+</script>
+{% endblock %}

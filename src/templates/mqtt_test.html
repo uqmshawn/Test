@@ -1,0 +1,193 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>MQTT Test Message</h2>
+
+    {% if iot_env and tenant_name and device_name %}
+    <div class="alert alert-info mb-3">
+        <p><strong>Current Configuration:</strong></p>
+        <ul>
+            <li>Environment: {{ iot_env }}</li>
+            <li>Tenant: {{ tenant_name }}</li>
+            <li>Device: {{ device_name }}</li>
+        </ul>
+        <p class="mb-0">Messages published to the local MQTT broker will be forwarded to AWS IoT Core if they use the correct topic format.</p>
+    </div>
+    {% else %}
+    <div class="alert alert-warning mb-3">
+        <p><strong>Configuration Incomplete:</strong> Environment, tenant, or device name is not configured.</p>
+        <p class="mb-0">Please configure these values in the <a href="{{ url_for('config') }}">Configuration</a> page.</p>
+    </div>
+    {% endif %}
+
+    {% if is_mock_mode %}
+    <div class="alert alert-warning mb-3">
+        <p><strong>Mock Mode Enabled:</strong> The system is running in mock mode.</p>
+        <p class="mb-0">In mock mode, GPS data is simulated, but MQTT messages are still sent to AWS IoT Core. You can use this page to test the MQTT connection to AWS IoT Core.</p>
+    </div>
+    {% endif %}
+
+    <form method="POST">
+        <div class="mb-3">
+            <label for="topic" class="form-label">Topic</label>
+            <input type="text" class="form-control" id="topic" name="topic" value="{{ default_topic }}" placeholder="Enter MQTT topic" required>
+            <div class="form-text">
+                For AWS IoT, use format: {environment}/{tenant}/{device}/out/{message-type}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="payload" class="form-label">Payload</label>
+            <textarea class="form-control" id="payload" name="payload" rows="5" placeholder="Enter message payload (JSON)" required>{{ default_payload }}</textarea>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Publish Message</button>
+    </form>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'message' else 'info' }} mt-3">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <div class="mt-4">
+        <div class="row">
+            <div class="col-md-6">
+                <h4>AWS IoT Topics</h4>
+                <div class="list-group">
+                    {% if iot_env and tenant_name and device_name %}
+                        <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('{{ iot_env }}/{{ tenant_name }}/{{ device_name }}/out/status')">
+                            Status Topic
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('{{ iot_env }}/{{ tenant_name }}/{{ device_name }}/out/device')">
+                            Device Data Topic
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('{{ iot_env }}/{{ tenant_name }}/{{ device_name }}/out/gps')">
+                            GPS Data Topic
+                        </button>
+                        <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('{{ iot_env }}/{{ tenant_name }}/{{ device_name }}/out/vehicle')">
+                            Vehicle Data Topic
+                        </button>
+                        <div class="list-group-item list-group-item-light">
+                            <small>These topics publish directly to AWS IoT Core</small>
+                        </div>
+                    {% else %}
+                        <div class="list-group-item list-group-item-light">
+                            Configure environment settings to see AWS IoT topics
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-md-6">
+                <h4>Local Topics</h4>
+                <div class="list-group">
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('out/status')">
+                        Local Status Topic
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('out/device')">
+                        Local Device Data Topic
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('out/gps')">
+                        Local GPS Data Topic
+                    </button>
+                    <button type="button" class="list-group-item list-group-item-action" onclick="setTopic('out/vehicle')">
+                        Local Vehicle Data Topic
+                    </button>
+                    <div class="list-group-item list-group-item-light">
+                        <small>These topics publish to the local broker and are forwarded to AWS IoT Core</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h4>How MQTT Messages Flow</h4>
+        <div class="card">
+            <div class="card-body">
+                <p>When you publish a message using this page, the following happens:</p>
+                <ol>
+                    <li>The message is published to the local Mosquitto MQTT broker</li>
+                    <li>The MQTT broker service subscribes to all topics starting with "out/" on the local broker</li>
+                    <li>When a message is received, the MQTT broker service:</li>
+                    <ul>
+                        <li>Reformats the topic to include environment, tenant, and device name</li>
+                        <li>Forwards the message to AWS IoT Core</li>
+                        <li>Stores the message in the database for tracking</li>
+                    </ul>
+                </ol>
+                <p><strong>Important:</strong> For messages to be forwarded to AWS IoT Core, they must:</p>
+                <ul>
+                    <li>Use a topic that starts with "out/" (e.g., "out/status", "out/device")</li>
+                    <li>Have a valid JSON payload</li>
+                </ul>
+                <p>The pre-populated topics on this page are already formatted for AWS IoT Core, so they will be published directly to AWS IoT Core without reformatting.</p>
+
+                <div class="alert alert-info mt-3">
+                    <h5>Troubleshooting</h5>
+                    <p>To verify if your message was successfully sent to AWS IoT Core:</p>
+                    <ol>
+                        <li>Check the <a href="{{ url_for('status', show_queued=1, show_sent=1) }}">Message Status</a> page to see if your message was queued and sent</li>
+                        <li>If the message is queued but not sent, check the MQTT broker logs for errors</li>
+                        <li>Verify that the MQTT broker service is running and properly configured</li>
+                        <li>Ensure that valid AWS IoT certificates are uploaded in the Configuration page</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function setTopic(topic) {
+        document.getElementById('topic').value = topic;
+
+        // Set a default payload based on the topic
+        if (topic.endsWith('/out/status')) {
+            document.getElementById('payload').value = JSON.stringify({
+                "message": "Status update from MQTT test page",
+                "timestamp": new Date().toISOString()
+            }, null, 2);
+        } else if (topic.endsWith('/out/device')) {
+            document.getElementById('payload').value = JSON.stringify({
+                "device": {
+                    "timestamp": new Date().toISOString(),
+                    "system": {
+                        "status": "OK",
+                        "uptime": 3600
+                    }
+                }
+            }, null, 2);
+        } else if (topic.endsWith('/out/gps')) {
+            document.getElementById('payload').value = JSON.stringify({
+                "gps": {
+                    "timestamp": new Date().toISOString(),
+                    "latitude": -27.9944,
+                    "longitude": 153.4160,
+                    "altitude": 10.5,
+                    "speed": 0,
+                    "satellites": 8,
+                    "fix": 3
+                }
+            }, null, 2);
+        } else if (topic.endsWith('/out/vehicle')) {
+            document.getElementById('payload').value = JSON.stringify({
+                "vehicle": {
+                    "timestamp": new Date().toISOString(),
+                    "ignition": true,
+                    "battery": 12.8,
+                    "inputs": {
+                        "input1": true,
+                        "input2": false
+                    }
+                }
+            }, null, 2);
+        }
+    }
+</script>
+{% endblock %}

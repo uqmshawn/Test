@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="logs-header">
+        <h1>Logs</h1>
+        <div class="logs-controls">
+            <select class="form-control" id="log_file" name="log_file">
+                {% for file in log_files %}
+                <option value="{{ file }}" {% if file == selected %}selected{% endif %}>{{ file }}</option>
+                {% endfor %}
+            </select>
+            <button id="refresh-logs" class="button refresh-button">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <a href="/download_log?file={{ selected }}" class="button download-button">
+                <i class="fas fa-download"></i> Download
+            </a>
+            <button id="view-raw-logs" class="button view-raw-button">
+                <i class="fas fa-code"></i> View Raw
+            </button>
+        </div>
+    </div>
+
+    <div class="log-content">
+        {% for entry in log_entries %}
+        <div class="log-entry {% if 'ERROR' in entry.content %}log-error{% elif 'WARNING' in entry.content %}log-warning{% elif 'mqtt_broker' in entry.content %}log-mqtt{% elif 'background_task' in entry.content %}log-background{% elif 'web_app' in entry.content %}log-webapp{% endif %}"
+             data-timestamp="{{ entry.timestamp if entry.timestamp else '' }}"
+             data-content="{{ entry.content }}">
+            <div class="log-entry-content">{{ entry.content }}</div>
+            <button class="show-full-button" title="Show Full Log Entry">
+                <i class="fas fa-expand-alt"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Modal for displaying full log entry -->
+<div id="log-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Full Log Entry</h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <pre id="modal-log-content"></pre>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for raw logs -->
+<div id="raw-logs-modal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Raw Log File: <span id="raw-logs-filename"></span></h2>
+            <span class="close">&times;</span>
+        </div>
+        <div class="modal-body">
+            <pre id="raw-logs-content"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const logSelect = document.getElementById('log_file');
+    const refreshButton = document.getElementById('refresh-logs');
+    const viewRawButton = document.getElementById('view-raw-logs');
+    const downloadButton = document.querySelector('.download-button');
+    const modal = document.getElementById('log-modal');
+    const rawModal = document.getElementById('raw-logs-modal');
+    const modalContent = document.getElementById('modal-log-content');
+    const rawLogsContent = document.getElementById('raw-logs-content');
+    const rawLogsFilename = document.getElementById('raw-logs-filename');
+    const closeButtons = document.querySelectorAll('.close');
+
+    // Function to refresh logs
+    function refreshLogs() {
+        const selectedLog = logSelect.value;
+        console.log('Refreshing logs with selected file:', selectedLog);
+        window.location.href = `/logs?log_file=${encodeURIComponent(selectedLog)}`;
+    }
+
+    // Handle log file selection change
+    logSelect.addEventListener('change', function() {
+        console.log('Log selection changed to:', logSelect.value);
+        // Update download link
+        downloadButton.href = `/download_log?file=${encodeURIComponent(logSelect.value)}`;
+        // Refresh logs with the new selection
+        refreshLogs();
+    });
+
+    // Handle refresh button click
+    refreshButton.addEventListener('click', function() {
+        console.log('Refresh button clicked');
+        refreshLogs();
+    });
+
+    // Handle view raw logs button click
+    viewRawButton.addEventListener('click', function() {
+        fetch(`/raw_log?file=${encodeURIComponent(logSelect.value)}`)
+            .then(response => response.text())
+            .then(data => {
+                rawLogsContent.textContent = data;
+                rawLogsFilename.textContent = logSelect.value;
+                rawModal.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error fetching raw logs:', error);
+                alert('Error loading raw logs. Please try again.');
+            });
+    });
+
+    // Handle show full button clicks
+    document.querySelectorAll('.show-full-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const logEntry = this.parentElement;
+            const content = logEntry.getAttribute('data-content');
+            modalContent.textContent = content;
+            modal.style.display = 'block';
+        });
+    });
+
+    // Close modals when clicking the close button
+    closeButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            this.closest('.modal').style.display = 'none';
+        });
+    });
+
+    // Close modals when clicking outside the modal content
+    window.addEventListener('click', function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+        if (event.target === rawModal) {
+            rawModal.style.display = 'none';
+        }
+    });
+
+    // Convert timestamps to local timezone
+    document.querySelectorAll('.log-entry[data-timestamp]').forEach(entry => {
+        const timestamp = entry.dataset.timestamp;
+        if (timestamp) {
+            try {
+                const date = new Date(timestamp);
+                if (!isNaN(date)) {
+                    const contentDiv = entry.querySelector('.log-entry-content');
+                    if (contentDiv) {
+                        contentDiv.textContent = contentDiv.textContent.replace(
+                            new RegExp(timestamp, 'g'),
+                            date.toLocaleString()
+                        );
+                    }
+                }
+            } catch (e) {
+                console.error('Error converting timestamp:', e);
+            }
+        }
+    });
+});
+</script>
+{% endblock %}
