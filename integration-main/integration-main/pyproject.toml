@@ -1,6 +1,0 @@
-[project]
-name = "integration"
-version = "0.1.0"
-description = "Integration project"
-
-[tool.black]

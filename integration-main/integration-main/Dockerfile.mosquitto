@@ -1,3 +1,0 @@
-FROM eclipse-mosquitto:2.0.20
-COPY mosquitto.conf /mosquitto.conf
-CMD ["mosquitto", "-c", "/mosquitto.conf"]
